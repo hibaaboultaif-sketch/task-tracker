@@ -16,14 +16,13 @@ VALID_STATUS_TRANSITIONS = {
 
 def validate_status_transition(current: Status, new: Status) -> None:
     if new not in VALID_STATUS_TRANSITIONS[current]:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Invalid status transition from '{current.value}' to '{new.value}'. "
-                "Status can only move forward: ToDo -> InProgress -> Done."
-            ),
-        )
-
+       raise HTTPException(
+           status_code=422,
+           detail=(
+               f"Invalid status transition from '{current.value}' to '{new.value}'. "
+               "Status can only move forward: ToDo -> InProgress -> Done."
+           ),
+       )
 
 @app.get("/")
 def root():
