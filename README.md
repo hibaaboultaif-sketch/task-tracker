@@ -26,4 +26,4 @@ pytest tests/test_tasks.py -v
 
 ## Documentation
 
-See `docs/midcourse/` for user stories, ADR, prompt log, verification evidence, and reflection.
+See `docs/` for user stories, ADR, prompt log, verification evidence, and reflection.
