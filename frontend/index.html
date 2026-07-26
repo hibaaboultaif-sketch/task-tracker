@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Task Tracker</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f5f7; margin: 0; padding: 20px; }
+  h1 { text-align: center; }
+  .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .board { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .column { background: #ebecf0; border-radius: 8px; width: 300px; padding: 10px; min-height: 400px; }
+  .column h2 { font-size: 16px; text-align: center; }
+  .card { background: white; border-radius: 6px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); cursor: grab; }
+  .card.overdue { border-left: 4px solid red; }
+  .priority { font-size: 12px; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+  .priority.High { background: #ffdddd; color: #a00; }
+  .priority.Medium { background: #fff3cd; color: #856404; }
+  .priority.Low { background: #d4edda; color: #155724; }
+  .tags { margin-top: 6px; }
+  .tag { background: #e0e0ff; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; display: inline-block; }
+  .due { font-size: 11px; color: #555; margin-top: 4px; }
+  button { padding: 6px 12px; border: none; border-radius: 4px; background: #0079bf; color: white; cursor: pointer; }
+  button:hover { background: #026aa7; }
+  input, select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+  #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+  #modal .box { background: white; padding: 20px; border-radius: 8px; width: 320px; }
+  #modal input, #modal select { width: 100%; margin-bottom: 8px; box-sizing: border-box; }
+  #error { color: red; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>Task Tracker</h1>
+
+<div class="controls">
+  <button onclick="openModal()">+ New Task</button>
+  <input id="tagFilter" placeholder="Filter by tag" oninput="loadTasks()">
+  <label><input type="checkbox" id="overdueFilter" onchange="loadTasks()"> Overdue only</label>
+</div>
+
+<div id="board" class="board"></div>
+
+<div id="modal">
+  <div class="box">
+    <h3 id="modalTitle">New Task</h3>
+    <input id="f_title" placeholder="Title">
+    <input id="f_description" placeholder="Description">
+    <select id="f_status">
+      <option value="ToDo">ToDo</option>
+      <option value="InProgress">InProgress</option>
+      <option value="Done">Done</option>
+    </select>
+    <select id="f_priority">
+      <option value="Low">Low</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="High">High</option>
+    </select>
+    <input id="f_assignee" placeholder="Assignee (optional)">
+    <input id="f_due_date" type="date">
+    <input id="f_tags" placeholder="Tags (comma separated)">
+    <div id="error"></div>
+    <button onclick="saveTask()">Save</button>
+    <button onclick="closeModal()" style="background:#ccc;color:#333;">Cancel</button>
+  </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let editingId = null;
+
+async function loadTasks() {
+  const tagVal = document.getElementById("tagFilter").value.trim();
+  const overdueOnly = document.getElementById("overdueFilter").checked;
+  let url = API + "/tasks";
+  const params = [];
+  if (tagVal) params.push("tag=" + encodeURIComponent(tagVal));
+  if (overdueOnly) params.push("overdue=true");
+  if (params.length) url += "?" + params.join("&");
+
+  const board = document.getElementById("board");
+  board.innerHTML = "Loading...";
+  try {
+    const res = await fetch(url);
+    const tasks = await res.json();
+    renderBoard(tasks);
+  } catch (e) {
+    board.innerHTML = "<p>Error loading tasks. Is the backend running?</p>";
+  }
+}
+
+function renderBoard(tasks) {
+  const statuses = ["ToDo", "InProgress", "Done"];
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  const priorityOrder = { High: 0, Medium: 1, Low: 2 };
+
+  statuses.forEach(status => {
+    const col = document.createElement("div");
+    col.className = "column";
+    col.innerHTML = "<h2>" + status + "</h2>";
+    const colTasks = tasks.filter(t => t.status === status)
+                           .sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    if (colTasks.length === 0) {
+      col.innerHTML += "<p style='text-align:center;color:#888;'>No tasks</p>";
+    }
+    colTasks.forEach(t => {
+      const card = document.createElement("div");
+      card.className = "card" + (t.is_overdue ? " overdue" : "");
+      let tagsHtml = "";
+      if (t.tags && t.tags.length) {
+        tagsHtml = "<div class='tags'>" + t.tags.map(tag => "<span class='tag'>" + tag + "</span>").join("") + "</div>";
+      }
+      let dueHtml = t.due_date ? "<div class='due'>Due: " + t.due_date + (t.is_overdue ? " (OVERDUE)" : "") + "</div>" : "";
+      card.innerHTML = `
+        <strong>${t.title}</strong>
+        <div class="priority ${t.priority}">${t.priority}</div>
+        ${dueHtml}
+        ${tagsHtml}
+        <div style="margin-top:6px;">
+          <button onclick="editTask(${t.id})">Edit</button>
+          <button onclick="deleteTask(${t.id})" style="background:#c00;">Delete</button>
+        </div>
+      `;
+      col.appendChild(card);
+    });
+    board.appendChild(col);
+  });
+}
+
+function openModal() {
+  editingId = null;
+  document.getElementById("modalTitle").innerText = "New Task";
+  document.getElementById("f_title").value = "";
+  document.getElementById("f_description").value = "";
+  document.getElementById("f_status").value = "ToDo";
+  document.getElementById("f_priority").value = "Medium";
+  document.getElementById("f_assignee").value = "";
+  document.getElementById("f_due_date").value = "";
+  document.getElementById("f_tags").value = "";
+  document.getElementById("error").innerText = "";
+  document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+async function editTask(id) {
+  const res = await fetch(API + "/tasks/" + id);
+  const t = await res.json();
+  editingId = id;
+  document.getElementById("modalTitle").innerText = "Edit Task";
+  document.getElementById("f_title").value = t.title;
+  document.getElementById("f_description").value = t.description || "";
+  document.getElementById("f_status").value = t.status;
+  document.getElementById("f_priority").value = t.priority;
+  document.getElementById("f_assignee").value = t.assignee || "";
+  document.getElementById("f_due_date").value = t.due_date || "";
+  document.getElementById("f_tags").value = (t.tags || []).join(", ");
+  document.getElementById("error").innerText = "";
+  document.getElementById("modal").style.display = "flex";
+}
+
+async function saveTask() {
+  const title = document.getElementById("f_title").value.trim();
+  const errorDiv = document.getElementById("error");
+  errorDiv.innerText = "";
+  if (!title) {
+    errorDiv.innerText = "Title cannot be blank.";
+    return;
+  }
+  const tagsRaw = document.getElementById("f_tags").value;
+  const tags = tagsRaw.split(",").map(t => t.trim()).filter(t => t.length > 0);
+
+  const payload = {
+    title: title,
+    description: document.getElementById("f_description").value || null,
+    status: document.getElementById("f_status").value,
+    priority: document.getElementById("f_priority").value,
+    assignee: document.getElementById("f_assignee").value || null,
+    due_date: document.getElementById("f_due_date").value || null,
+    tags: tags
+  };
+
+  try {
+    let res;
+    if (editingId) {
+      res = await fetch(API + "/tasks/" + editingId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch(API + "/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+    if (!res.ok) {
+      const err = await res.json();
+      errorDiv.innerText = JSON.stringify(err.detail);
+      return;
+    }
+    closeModal();
+    loadTasks();
+  } catch (e) {
+    errorDiv.innerText = "Network error.";
+  }
+}
+
+async function deleteTask(id) {
+  if (!confirm("Delete this task?")) return;
+  await fetch(API + "/tasks/" + id, { method: "DELETE" });
+  loadTasks();
+}
+
+loadTasks();
+</script>
+
+</body>
+</html>

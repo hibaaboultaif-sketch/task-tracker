@@ -91,3 +91,96 @@ def test_delete_task(client):
     get_response = client.get(f"/tasks/{task_id}")
     assert get_response.status_code == 404
     assert get_response.json()["detail"] == "Task not found"
+
+
+def test_create_task_with_tags(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Tagged task", "tags": ["backend", "urgent"]},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["tags"] == ["backend", "urgent"]
+
+
+def test_create_task_blank_tag_is_dropped(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task with blank tag", "tags": ["backend", "   ", ""]},
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["tags"] == ["backend"]
+
+
+def test_update_tags_preserved_after_unrelated_update(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task to update", "tags": ["frontend"]},
+    )
+    task_id = create_response.json()["id"]
+
+    update_response = client.patch(
+        f"/tasks/{task_id}", json={"priority": "High"}
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["tags"] == ["frontend"]
+    assert update_response.json()["priority"] == "High"
+
+
+def test_filter_tasks_by_tag(client):
+    client.post("/tasks", json={"title": "Task A", "tags": ["backend"]})
+    client.post("/tasks", json={"title": "Task B", "tags": ["frontend"]})
+
+    response = client.get("/tasks", params={"tag": "backend"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Task A"
+
+
+def test_create_task_invalid_due_date_format_fails(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Bad date task", "due_date": "01-01-2026"},
+    )
+
+    assert response.status_code == 422
+    assert "due_date" in response.text.lower()
+
+
+def test_overdue_detection(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Overdue task", "due_date": "2020-01-01"},
+    )
+
+    assert create_response.status_code == 201
+    assert create_response.json()["is_overdue"] is True
+
+
+def test_future_due_date_not_overdue(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Future task", "due_date": "2099-01-01"},
+    )
+
+    assert create_response.status_code == 201
+    assert create_response.json()["is_overdue"] is False
+
+
+def test_filter_overdue_only(client):
+    client.post("/tasks", json={"title": "Old task", "due_date": "2020-01-01"})
+    client.post("/tasks", json={"title": "Future task", "due_date": "2099-01-01"})
+    client.post("/tasks", json={"title": "No date task"})
+
+    response = client.get("/tasks", params={"overdue": "true"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Old task"
