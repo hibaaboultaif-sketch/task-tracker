@@ -48,6 +48,9 @@ Breakdown:
 
 **Break Test 2 — Overdue detection:**
 1. Modified `compute_is_overdue` to always `return False` regardless of the due date comparison.
-2. This should cause `test_overdue_detection` to fail, since a task with a past due date would no longer be flagged as overdue.
+2. Ran `pytest tests/test_tasks.py -v` and observed the actual failure:
+FAILED tests/test_tasks.py::test_overdue_detection - assert False is True
+FAILED tests/test_tasks.py::test_filter_overdue_only - assert 0 == 1
+2 failed, 12 passed, 1 warning in 0.24s
 3. Reverted the change back to `return due < date.today()`.
-4. Re-ran the suite → all 14 tests PASSED, confirming the fix restored correct behavior.
+4. Re-ran the suite and confirmed all tests passed again:
