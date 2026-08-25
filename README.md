@@ -46,8 +46,9 @@ uvicorn app.main:app --reload
 pytest -v
 
 ### How to run with Docker
-[to be filled in during Part B]
-
+docker build -t task-tracker .
+docker run -p 8000:8000 task-tracker
+curl http://127.0.0.1:8000/health
 ### Evidence files
 - docs/release-evidence.md
 - docs/final-ai-review.md

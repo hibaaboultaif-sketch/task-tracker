@@ -16,11 +16,11 @@
 - Shortcut check: no continue-on-error / no || true / pytest is not skipped.
 
 ## Docker evidence
-- Build command:
-- Run command:
-- /health check:
-- Non-root check, if implemented:
-- No-baked-secrets check:
+- Build command: `docker build -t task-tracker .`
+- Run command: `docker run -p 8000:8000 task-tracker`
+- /health check: `curl http://127.0.0.1:8000/health` -> `{"status":"ok"}`, confirmed 200 OK in container logs
+- Non-root check, if implemented: Yes - Dockerfile creates and switches to non-root user (appuser) via useradd and USER instruction
+- No-baked-secrets check: Yes - .dockerignore excludes .env, .git, docs, tests; only app/ and requirements.txt are copied into the image
 
 ## Documentation claim-vs-reality log
 | Claim checked | Evidence used | Result | Change made, if any |
