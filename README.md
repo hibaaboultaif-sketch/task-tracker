@@ -37,18 +37,22 @@ Branch reviewed: final-project
 - AI review, security, and ownership evidence is in docs/.
 
 ### How to run locally
+```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+```
 
 ### How to run tests
 pytest -v
 
 ### How to run with Docker
+```
 docker build -t task-tracker .
 docker run -p 8000:8000 task-tracker
 curl http://127.0.0.1:8000/health
+```
 ### Evidence files
 - docs/release-evidence.md
 - docs/final-ai-review.md
