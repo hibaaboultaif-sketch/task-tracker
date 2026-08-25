@@ -10,9 +10,9 @@
 - Test result: 14 passed, 1 warning in 0.18s (warning is a pre-existing httpx/starlette TestClient deprecation notice, unrelated to final-project changes)
 
 ## CI evidence
-- Workflow file:
-- Latest run link or note:
-- Test command used by CI:
+- Workflow file: .github/workflows/ci.yml
+- Latest run link or note: GitHub Actions run for commit 9ff583e on final-project branch, passed with green checkmark (View at: https://github.com/hibaaboultaif-sketch/task-tracker/actions)
+- Test command used by CI: pytest -v
 - Shortcut check: no continue-on-error / no || true / pytest is not skipped.
 
 ## Docker evidence
