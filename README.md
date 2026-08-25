@@ -57,4 +57,4 @@ curl http://127.0.0.1:8000/health
 ### AI assistance summary
 AI helped draft or review: CI / Docker / docs / security / debugging.
 I verified the work by: running pytest, checking /health, manually testing the frontend create/edit flow.
-One AI suggestion I rejected or corrected: [to be filled in during Part C]
+One AI suggestion I rejected or corrected: AI flagged the non-atomic task ID counter as a concurrency risk; graded as Noise and left unchanged since this runs as a single-developer local service (see docs/final-ai-review.md for full reasoning).
