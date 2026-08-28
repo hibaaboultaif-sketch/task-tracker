@@ -25,6 +25,6 @@
 ## Documentation claim-vs-reality log
 | Claim checked | Evidence used | Result | Change made, if any |
 |---|---|---|---|
-| | | | |
-| | | | |
-| | | | |
+| README claims interactive API docs are available at http://127.0.0.1:8000/docs | Started the API and opened http://127.0.0.1:8000/docs in browser | Confirmed - Swagger UI loaded showing all 7 endpoints (root, health, POST/GET/PATCH/DELETE tasks) | None needed |
+| README/AGENTS.md claim CORS is enabled for local development | Opened app/main.py, checked lines 10-16 | Confirmed - CORSMiddleware present with allow_origins=["*"], allow_credentials=True | None needed |
+| Docs claim the test suite has 14 tests, all passing | Ran pytest -v | Confirmed - output shows "collected 14 items" and "14 passed, 1 warning in 0.16s" | None needed - warning is a pre-existing httpx/starlette deprecation notice unrelated to app logic
